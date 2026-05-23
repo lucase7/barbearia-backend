@@ -1,0 +1,77 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+package "com.barbearia.model" {
+    enum AgendamentoStatus {
+        CONFIRMADO
+        CANCELADO
+        CONCLUIDO
+    }
+
+    class Cliente {
+        - id: UUID
+        - nome: String
+        - telefone: String
+        - email: String
+    }
+
+    class Barbeiro {
+        - id: UUID
+        - nome: String
+        - especialidade: String
+    }
+
+    class Servico {
+        - id: UUID
+        - nome: String
+        - preco: BigDecimal
+        - duracaoMinutos: int
+    }
+
+    class Agendamento {
+        - id: UUID
+        - dataHora: LocalDateTime
+        - cliente: Cliente
+        - barbeiro: Barbeiro
+        - servico: Servico
+        - status: AgendamentoStatus
+        + alterarStatus(novoStatus: AgendamentoStatus): void
+    }
+}
+
+package "com.barbearia.strategy" {
+    interface ValidacaoStrategy {
+        + validar(agendamento: Agendamento, agendamentosExistentes: List<Agendamento>): void
+    }
+
+    class ValidacaoConflitoHorario implements ValidacaoStrategy {
+        + validar(agendamento: Agendamento, agendamentosExistentes: List<Agendamento>): void
+    }
+}
+
+package "com.barbearia.service" {
+    class ServicoFactory {
+        + {static} criarCorteSimples(): Servico
+        + {static} criarBarbaCompleta(): Servico
+    }
+
+    class AgendamentoService {
+        - agendamentosRepo: List<Agendamento>
+        - validacoes: List<ValidacaoStrategy>
+        + agendar(agendamento: Agendamento): void
+        + cancelar(idAgendamento: UUID): void
+    }
+}
+
+' Relacionamentos de Associação e Dependência
+Agendamento "0..*" --> "1" Cliente : pertence a
+Agendamento "0..*" --> "1" Barbeiro : designado a
+Agendamento "0..*" --> "1" Servico : executa
+Agendamento "1" --> "1" AgendamentoStatus : possui
+
+AgendamentoService "1" o-- "0..*" Agendamento : gerencia
+AgendamentoService "1" --> "0..*" ValidacaoStrategy : utiliza para validar
+
+ServicoFactory ..> Servico : cria >
+
+@enduml
